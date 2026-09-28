@@ -1,0 +1,17 @@
+# generated output
+out/
+docs/*.tmp
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# editors and local tooling
+.claude/
+.vscode/
+.idea/
+.DS_Store

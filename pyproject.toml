@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wingstrain"
+version = "1.0.0"
+description = "Strain-gauge downforce measurement model for a composite wing"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = ["numpy>=1.24", "matplotlib>=3.6"]
+
+[project.scripts]
+wingstrain = "wingstrain.cli:main"
+
+[tool.setuptools]
+packages = ["wingstrain"]

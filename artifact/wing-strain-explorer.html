@@ -1,0 +1,905 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wing Strain Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f2f3f1; --surface:#fbfbfa; --sunk:#e9eae7;
+  --ink:#16191c; --ink-2:#4e5459; --ink-3:#6b7278;
+  --line:#dcdfdc; --line-2:#c6cac6;
+  --comp-3:#1d4c86; --comp-2:#2a6bbd; --comp-1:#8fb6e4;
+  --neutral:#c9ccc8;
+  --tens-1:#e9a49e; --tens-2:#c5483f; --tens-3:#8f2b25;
+  --gauge:#b06c2c; --gauge-soft:#f0e0cd;
+  --warn:#9c5a12; --good:#2f6e3a;
+  --shadow:0 1px 2px rgba(20,25,30,.06), 0 8px 24px rgba(20,25,30,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#0e1113; --surface:#171b1e; --sunk:#1f2428;
+    --ink:#eceeec; --ink-2:#a6aeb4; --ink-3:#8e969c;
+    --line:#2a3035; --line-2:#3a4248;
+    --comp-3:#6ea6ec; --comp-2:#4a86d4; --comp-1:#27466e;
+    --neutral:#3d4348;
+    --tens-1:#6b322e; --tens-2:#d4675e; --tens-3:#ec938a;
+    --gauge:#d69551; --gauge-soft:#3a2a18;
+    --warn:#d9a05b; --good:#7bbb87;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#0e1113; --surface:#171b1e; --sunk:#1f2428;
+  --ink:#eceeec; --ink-2:#a6aeb4; --ink-3:#8e969c;
+  --line:#2a3035; --line-2:#3a4248;
+  --comp-3:#6ea6ec; --comp-2:#4a86d4; --comp-1:#27466e;
+  --neutral:#3d4348;
+  --tens-1:#6b322e; --tens-2:#d4675e; --tens-3:#ec938a;
+  --gauge:#d69551; --gauge-soft:#3a2a18;
+  --warn:#d9a05b; --good:#7bbb87;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0; text-wrap:balance; font-weight:600; letter-spacing:-.01em}
+.eyebrow{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500}
+
+.shell{display:grid; grid-template-columns:330px minmax(0,1fr); gap:18px;
+  max-width:1420px; margin:0 auto; padding:20px}
+@media (max-width:980px){ .shell{grid-template-columns:1fr; padding:14px} }
+
+/* ---- masthead ---- */
+.masthead{grid-column:1/-1; display:flex; align-items:flex-end;
+  justify-content:space-between; gap:18px; flex-wrap:wrap;
+  padding-bottom:14px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:25px}
+.masthead p{margin:4px 0 0; color:var(--ink-2); max-width:62ch; font-size:13.5px}
+
+/* ---- controls ---- */
+.rail{display:flex; flex-direction:column; gap:12px; align-self:start;
+  position:sticky; top:20px}
+@media (max-width:980px){ .rail{position:static} }
+.group{background:var(--surface); border:1px solid var(--line);
+  border-radius:3px; padding:12px 13px 14px}
+.group>.eyebrow{display:block; margin-bottom:9px;
+  padding-bottom:7px; border-bottom:1px solid var(--line)}
+.ctl{display:grid; grid-template-columns:1fr auto; align-items:baseline;
+  gap:2px 8px; margin-bottom:9px}
+.ctl:last-child{margin-bottom:0}
+.ctl label{font-size:12.5px; color:var(--ink-2)}
+.ctl .val{font-size:12.5px; font-weight:500; color:var(--ink)}
+.ctl input[type=range]{grid-column:1/-1; width:100%; margin:3px 0 0;
+  accent-color:var(--gauge); height:16px}
+.ctl select{grid-column:1/-1; width:100%; margin-top:3px; padding:5px 7px;
+  background:var(--sunk); color:var(--ink); border:1px solid var(--line-2);
+  border-radius:2px; font:inherit; font-size:12.5px}
+input[type=range]:focus-visible, select:focus-visible, button:focus-visible,
+[tabindex]:focus-visible{outline:2px solid var(--gauge); outline-offset:2px}
+.seg{display:flex; gap:0; grid-column:1/-1; margin-top:4px}
+.seg button{flex:1; padding:5px 4px; font:inherit; font-size:12px;
+  background:var(--sunk); color:var(--ink-2); border:1px solid var(--line-2);
+  cursor:pointer; margin-left:-1px}
+.seg button:first-child{margin-left:0; border-radius:2px 0 0 2px}
+.seg button:last-child{border-radius:0 2px 2px 0}
+.seg button[aria-pressed=true]{background:var(--gauge); border-color:var(--gauge);
+  color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed=true],
+:root:not([data-theme="light"]) .seg button[aria-pressed=true]{color:#17110a}
+.minirow{display:flex; gap:6px; grid-column:1/-1; margin-top:5px}
+.minirow button{flex:1; padding:5px 6px; font:inherit; font-size:12px; cursor:pointer;
+  background:var(--sunk); color:var(--ink-2); border:1px solid var(--line-2);
+  border-radius:2px}
+.minirow button:hover{color:var(--ink); border-color:var(--ink-3)}
+textarea#c-paste{grid-column:1/-1; width:100%; margin-top:6px; min-height:104px;
+  padding:7px; background:var(--sunk); color:var(--ink); resize:vertical;
+  border:1px solid var(--line-2); border-radius:2px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11.5px}
+.status{grid-column:1/-1; margin-top:7px; font-size:11.5px; line-height:1.45;
+  color:var(--ink-2); padding:7px 8px; background:var(--sunk);
+  border-left:2px solid var(--line-2); border-radius:0 2px 2px 0}
+.status[data-k=ok]{border-left-color:var(--good)}
+.status[data-k=bad]{border-left-color:var(--tens-2); color:var(--ink)}
+.status b{color:var(--ink)}
+.dropping{outline:2px dashed var(--gauge); outline-offset:-4px}
+.reset{width:100%; padding:7px; font:inherit; font-size:12.5px; cursor:pointer;
+  background:transparent; color:var(--ink-2); border:1px solid var(--line-2);
+  border-radius:2px}
+.reset:hover{color:var(--ink); border-color:var(--ink-3)}
+
+/* ---- main ---- */
+.main{display:flex; flex-direction:column; gap:18px; min-width:0}
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:10px}
+.tile{background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  padding:11px 13px 12px; position:relative; overflow:hidden}
+.tile .eyebrow{display:block; margin-bottom:5px}
+.tile .big{font-size:27px; font-weight:500; line-height:1.05; letter-spacing:-.02em}
+.tile .unit{font-size:13px; color:var(--ink-2); font-weight:400; margin-left:2px}
+.tile .sub{font-size:11.5px; color:var(--ink-3); margin-top:3px}
+.tile::after{content:""; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--line-2)}
+.tile[data-flag=gauge]::after{background:var(--gauge)}
+.tile[data-flag=warn]::after{background:var(--warn)}
+.tile[data-flag=good]::after{background:var(--good)}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  padding:14px 16px 16px}
+.card-head{display:flex; align-items:baseline; justify-content:space-between;
+  gap:12px; flex-wrap:wrap; margin-bottom:10px}
+.card-head h2{font-size:15px}
+.card-head .note{font-size:12px; color:var(--ink-3)}
+.chart{width:100%; display:block; overflow:visible; touch-action:none}
+.hint{font-size:11.5px; color:var(--ink-3); margin-top:7px}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+@media (max-width:980px){ .two{grid-template-columns:1fr} }
+
+/* ---- budget ---- */
+.bar-row{display:grid; grid-template-columns:150px minmax(0,1fr) 72px;
+  align-items:center; gap:10px; margin-bottom:6px; font-size:12.5px}
+.bar-track{height:12px; background:var(--sunk); border-radius:2px; overflow:hidden}
+.bar-fill{height:100%; border-radius:2px}
+.bar-row .amt{text-align:right; font-size:12.5px}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px;
+  color:var(--ink-2); margin-top:9px}
+.swatch{display:inline-block; width:9px; height:9px; border-radius:2px;
+  margin-right:5px; vertical-align:middle}
+
+/* ---- findings ---- */
+.finding{display:grid; grid-template-columns:auto 1fr; gap:10px;
+  padding:9px 0; border-top:1px solid var(--line); font-size:13px;
+  color:var(--ink-2)}
+.finding:first-of-type{border-top:0}
+.finding b{color:var(--ink); font-weight:600}
+.dot{width:7px; height:7px; border-radius:50%; margin-top:7px;
+  background:var(--ink-3)}
+.dot[data-k=warn]{background:var(--warn)} .dot[data-k=good]{background:var(--good)}
+.dot[data-k=gauge]{background:var(--gauge)}
+table.reads{width:100%; border-collapse:collapse; font-size:12.5px}
+table.reads th{text-align:right; font-weight:500; color:var(--ink-3);
+  font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  padding:0 0 6px; border-bottom:1px solid var(--line)}
+table.reads th:first-child{text-align:left}
+table.reads td{padding:6px 0; border-bottom:1px solid var(--line);
+  text-align:right}
+table.reads td:first-child{text-align:left; color:var(--ink-2)}
+table.reads tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+footer{grid-column:1/-1; color:var(--ink-3); font-size:12px; padding-top:4px;
+  border-top:1px solid var(--line); margin-top:4px}
+@media (prefers-reduced-motion:no-preference){
+  .bar-fill{transition:width .18s ease-out}
+}
+</style>
+
+<div class="shell">
+  <header class="masthead">
+    <div>
+      <span class="eyebrow">Formula Student · composite wing · strain instrumentation</span>
+      <h1>Wing Strain Bench</h1>
+      <p>Move the wing, the mounts and the gauge, and watch what the gauge would
+         actually read — and how much of the downforce that reading can honestly
+         tell you. Everything updates live.</p>
+    </div>
+    <div class="tile" style="min-width:186px" data-flag="gauge">
+      <span class="eyebrow">Downforce at speed</span>
+      <div class="big mono"><span id="t-down">—</span><span class="unit">N</span></div>
+      <div class="sub" id="t-down-sub">—</div>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <div class="group">
+      <span class="eyebrow">Wing</span>
+      <div class="ctl"><label for="c-span">Span</label><span class="val mono" id="v-span"></span>
+        <input type="range" id="c-span" min="0.6" max="1.4" step="0.02"></div>
+      <div class="ctl"><label for="c-chord">Chord</label><span class="val mono" id="v-chord"></span>
+        <input type="range" id="c-chord" min="0.15" max="0.45" step="0.005"></div>
+      <div class="ctl"><label for="c-angle">Incidence</label><span class="val mono" id="v-angle"></span>
+        <input type="range" id="c-angle" min="0" max="20" step="0.5"></div>
+      <div class="ctl"><label for="c-naca">Aerofoil</label><span class="val mono" id="v-naca"></span>
+        <select id="c-naca">
+          <option value="0012">NACA 0012 — symmetric</option>
+          <option value="2412">NACA 2412 — mild camber</option>
+          <option value="4412" selected>NACA 4412 — 4% camber</option>
+          <option value="6412">NACA 6412 — 6% camber</option>
+          <option value="4409">NACA 4409 — 9% thick</option>
+          <option value="4415">NACA 4415 — 15% thick</option>
+          <option value="custom" id="opt-custom" hidden>My profile</option>
+        </select></div>
+    </div>
+
+    <div class="group" id="profile-group">
+      <span class="eyebrow">Your own section</span>
+      <div class="ctl">
+        <label>Coordinate file</label>
+        <div class="minirow">
+          <button type="button" id="c-file-btn">Open .dat / .csv…</button>
+          <button type="button" id="c-paste-btn" aria-expanded="false">Paste…</button>
+        </div>
+        <input type="file" id="c-file" accept=".dat,.txt,.csv,.coord,text/plain" hidden>
+        <textarea id="c-paste" hidden spellcheck="false"
+          placeholder="Paste coordinates here — one x z pair per line.&#10;Selig or Lednicer order, any units.&#10;&#10;S1223&#10;1.000000  0.000000&#10;0.992870  0.003400&#10;…"></textarea>
+        <div class="minirow" id="c-paste-row" hidden>
+          <button type="button" id="c-paste-use">Use these coordinates</button>
+          <button type="button" id="c-paste-clear">Clear</button>
+        </div>
+        <div class="status" id="c-status" data-k="">Drop a coordinate file anywhere
+          on the page, or paste one. Selig and Lednicer order, millimetres or
+          normalised, comma or space separated — all read the same.</div>
+      </div>
+      <div class="ctl"><label>Mount as</label><span class="val mono" id="v-inv"></span>
+        <div class="seg" id="c-inv">
+          <button data-v="1" aria-pressed="true">Inverted</button>
+          <button data-v="0" aria-pressed="false">As drawn</button>
+        </div></div>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Structure</span>
+      <div class="ctl"><label for="c-plies">Skin plies</label><span class="val mono" id="v-plies"></span>
+        <input type="range" id="c-plies" min="2" max="8" step="1"></div>
+      <div class="ctl"><label for="c-layup">Layup</label><span class="val mono" id="v-layup"></span>
+        <select id="c-layup">
+          <option value="bal" selected>±45 outside, 0° core</option>
+          <option value="all45">all ±45 (torsion biased)</option>
+          <option value="all0">all 0° (bending biased)</option>
+        </select></div>
+      <div class="ctl"><label for="c-web">Shear web at</label><span class="val mono" id="v-web"></span>
+        <input type="range" id="c-web" min="0.40" max="1.0" step="0.01"></div>
+      <div class="ctl"><label for="c-mount">Mounts from tip</label><span class="val mono" id="v-mount"></span>
+        <input type="range" id="c-mount" min="0.05" max="0.48" step="0.005"></div>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Gauge</span>
+      <div class="ctl"><label for="c-gy">Spanwise station</label><span class="val mono" id="v-gy"></span>
+        <input type="range" id="c-gy" min="0.01" max="0.99" step="0.005"></div>
+      <div class="ctl"><label for="c-gx">Chord position</label><span class="val mono" id="v-gx"></span>
+        <input type="range" id="c-gx" min="0.03" max="0.95" step="0.005"></div>
+      <div class="ctl"><label>Surface</label><span class="val mono" id="v-surf"></span>
+        <div class="seg" id="c-surf">
+          <button data-v="bottom" aria-pressed="true">Bottom</button>
+          <button data-v="top" aria-pressed="false">Top</button>
+        </div></div>
+      <div class="ctl"><label>Grid angle</label><span class="val mono" id="v-ang"></span>
+        <div class="seg" id="c-gang">
+          <button data-v="0" aria-pressed="true">0°</button>
+          <button data-v="45" aria-pressed="false">+45°</button>
+          <button data-v="-45" aria-pressed="false">−45°</button>
+        </div></div>
+      <div class="ctl"><label for="c-bridge">Bridge</label>
+        <select id="c-bridge">
+          <option value="quarter">¼ bridge — one gauge, no compensation</option>
+          <option value="half_dummy">½ bridge — dummy gauge compensated</option>
+          <option value="half_pair" selected>½ bridge — top + bottom pair</option>
+          <option value="full">Full bridge — four active gauges</option>
+        </select></div>
+      <div class="ctl"><label for="c-noise">Noise floor</label><span class="val mono" id="v-noise"></span>
+        <input type="range" id="c-noise" min="0.2" max="5" step="0.1"></div>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Operating point</span>
+      <div class="ctl"><label for="c-v">Speed</label><span class="val mono" id="v-v"></span>
+        <input type="range" id="c-v" min="5" max="32" step="0.5"></div>
+      <div class="ctl"><label for="c-cl">C<sub>L</sub> of this element</label><span class="val mono" id="v-cl"></span>
+        <input type="range" id="c-cl" min="0.4" max="3.0" step="0.05"></div>
+      <div class="ctl"><label for="c-flap">Load carried from flaps</label><span class="val mono" id="v-flap"></span>
+        <input type="range" id="c-flap" min="0" max="0.75" step="0.01"></div>
+      <div class="ctl"><label for="c-brk">Flap brackets at</label><span class="val mono" id="v-brk"></span>
+        <input type="range" id="c-brk" min="0.02" max="0.48" step="0.005"></div>
+      <div class="ctl"><label for="c-tip">Tip loading</label><span class="val mono" id="v-tip"></span>
+        <input type="range" id="c-tip" min="0.3" max="1.0" step="0.02"></div>
+      <div class="ctl"><label for="c-dt">Temperature swing</label><span class="val mono" id="v-dt"></span>
+        <input type="range" id="c-dt" min="0" max="30" step="1"></div>
+    </div>
+    <button class="reset" id="c-reset">Reset to the baseline wing</button>
+  </aside>
+
+  <main class="main">
+    <div class="tiles">
+      <div class="tile" data-flag="gauge">
+        <span class="eyebrow">Gauge reads</span>
+        <div class="big mono"><span id="t-ue">—</span><span class="unit">µε</span></div>
+        <div class="sub" id="t-ue-sub">—</div>
+      </div>
+      <div class="tile">
+        <span class="eyebrow">Sensitivity</span>
+        <div class="big mono"><span id="t-sens">—</span><span class="unit">µε/N</span></div>
+        <div class="sub" id="t-sens-sub">—</div>
+      </div>
+      <div class="tile">
+        <span class="eyebrow">Bridge output</span>
+        <div class="big mono"><span id="t-mv">—</span><span class="unit">mV/V</span></div>
+        <div class="sub" id="t-mv-sub">—</div>
+      </div>
+      <div class="tile" id="tile-err">
+        <span class="eyebrow">Downforce uncertainty</span>
+        <div class="big mono">±<span id="t-err">—</span><span class="unit">N</span></div>
+        <div class="sub" id="t-err-sub">—</div>
+      </div>
+      <div class="tile">
+        <span class="eyebrow">Peak skin strain</span>
+        <div class="big mono"><span id="t-peak">—</span><span class="unit">µε</span></div>
+        <div class="sub" id="t-peak-sub">—</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Along the span</h2>
+        <span class="note">Drag the copper marker, or click anywhere on the chart, to move the gauge</span>
+      </div>
+      <svg class="chart" id="svg-span" viewBox="0 0 880 290" role="img"
+           aria-label="Skin strain along the span, with the gauge station marked"></svg>
+      <p class="hint" id="hint-span"></p>
+    </section>
+
+    <div class="two">
+      <section class="card">
+        <div class="card-head">
+          <h2>Through the section</h2>
+          <span class="note" id="sec-note">Click the outline to move the gauge</span>
+        </div>
+        <svg class="chart" id="svg-sec" viewBox="0 0 440 300" role="img"
+             aria-label="Wing section coloured by strain per newton of downforce"></svg>
+        <p class="hint" id="hint-sec"></p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Where the error comes from</h2>
+          <span class="note">1σ, in newtons of downforce</span>
+        </div>
+        <div id="budget"></div>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--comp-2)"></i>the instrument</span>
+          <span><i class="swatch" style="background:var(--tens-2)"></i>the load you cannot see</span>
+        </div>
+        <div class="scroll" style="margin-top:14px">
+          <table class="reads">
+            <thead><tr><th>Channel</th><th>Strain</th><th>µε/N</th><th>N per µε</th></tr></thead>
+            <tbody id="reads"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>What this configuration is telling you</h2></div>
+      <div id="findings"></div>
+    </section>
+  </main>
+
+  <footer>
+    Thin-walled composite section with classical laminate theory, Euler–Bernoulli
+    beam with St Venant torsion, two symmetric mounts solved by statics. Strain
+    at the gauge includes bending about both axes, Poisson contraction, torsional
+    and transverse shear flow, and grid-length averaging. Figures match the
+    accompanying Python package to three significant figures.
+  </footer>
+</div>
+
+<script type="module">
+import { solve, toCar, parseProfile } from "./physics.js";
+
+const BASE = {
+  span:1.0, chord:0.300, angle:8, naca:"4412", plies:4, layup:"bal",
+  xRear:0.65, mountFrac:0.32, gy:0.46, gx:0.30, surface:"bottom", gang:0,
+  bridge:"half_pair", noise:1.0, V:20, CL:1.70, flapFrac:0.552, bracket:0.30,
+  tip:0.75, dT:12, useCustom:false, inverted:true,
+};
+let customProfile = null, customText = "";
+const S = { ...BASE };
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d=1) => (v<0?"−":"") + Math.abs(v).toFixed(d);
+
+/* ---------- diverging strain ramp: compression ↔ tension ---------- */
+const css = (n) => getComputedStyle(document.documentElement)
+  .getPropertyValue(n).trim();
+function ramp(t){ // t in [-1,1]
+  const stops = [[-1,css("--comp-3")],[-0.5,css("--comp-2")],[-0.15,css("--comp-1")],
+                 [0,css("--neutral")],[0.15,css("--tens-1")],[0.5,css("--tens-2")],
+                 [1,css("--tens-3")]];
+  t = Math.max(-1, Math.min(1, t));
+  for (let i=0;i<stops.length-1;i++){
+    const [a,ca]=stops[i], [b,cb]=stops[i+1];
+    if (t<=b){ return mix(ca,cb,(t-a)/(b-a||1)); }
+  }
+  return stops[stops.length-1][1];
+}
+const hex = (c) => {
+  const m = c.match(/^#?([0-9a-f]{6})$/i);
+  if (m){ const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; }
+  const p = c.match(/[\d.]+/g).map(Number); return [p[0],p[1],p[2]];
+};
+const mix = (a,b,f) => { const A=hex(a),B=hex(b);
+  return `rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*f)).join(",")})`; };
+
+/* ---------- parameter assembly ---------- */
+function layupAngles(n, kind){
+  if (kind==="all45") return Array.from({length:n},(_,i)=>i%2?-45:45);
+  if (kind==="all0") return Array.from({length:n},()=>0);
+  const half=[]; for(let i=0;i<Math.floor(n/2);i++) half.push(i===0?45:0);
+  const rest = half.slice().reverse();
+  const a = [...half, ...(n%2?[0]:[]), ...rest];
+  return a.length===n ? a : Array.from({length:n},(_,i)=>(i===0||i===n-1)?45:0);
+}
+function params(o={}){
+  const s = { ...S, ...o };
+  const area = s.span*s.chord, q = 0.5*1.225*s.V*s.V;
+  const Del = q*area*s.CL;
+  // flapFrac is the share of TOTAL downforce arriving through the brackets
+  const CLS_flaps = s.flapFrac<0.999 ? (Del*s.flapFrac/(1-s.flapFrac))/q : 0;
+  return {
+    span:s.span, chord:s.chord, angle:s.angle, inverted:s.inverted, xRef:0.25,
+    profile: (s.useCustom && customProfile) ? customProfile : null,
+    xFront:0.0, xRear:s.xRear, naca:s.naca,
+    skinAngles:layupAngles(s.plies, s.layup), plyKey:"twill_200", nSkin:72,
+    mountY:s.mountFrac*s.span, rho:1.225, V:s.V, CL:s.CL, CD:0.36,
+    xcCP:s.xcCP ?? 0.32, dist:"blend", tipLoading:s.tip,
+    CLS_flaps, CDS_flaps:CLS_flaps*0.30, flapXc:0.575,
+    bracket:s.bracket, strutOD:0.025, strutWall:0.0015, strutE:70e9,
+    gauge:{ y:s.gy*s.span, xc:s.gx, surface:s.surface, angle:s.gang,
+            bridge:s.bridge==="quarter"?"quarter":
+                   s.bridge==="full"?"full":"half", gf:2.05, exc:5,
+            gridLength:3e-3 },
+  };
+}
+
+/* ---------- error budget for a single-gauge calibration ---------- */
+const THERMAL_REJECT = { quarter:1.0, half_dummy:0.12, half_pair:0.04, full:0.03 };
+function budget(base){
+  const P = params(), r = solve(P);
+  const sens = r.gauge.ue / r.Dtot;              // µε per N
+  const perturb = (over) => {
+    const rr = solve(params(over));
+    const est = rr.gauge.ue / sens;              // what the nominal constant says
+    return Math.abs(est - rr.Dtot);
+  };
+  const shape = Math.max(perturb({tip:Math.min(1,S.tip+0.12)}),
+                         perturb({tip:Math.max(0.3,S.tip-0.12)}));
+  const split = S.flapFrac>0.001
+    ? Math.max(perturb({flapFrac:Math.min(0.95,S.flapFrac*1.15)}),
+               perturb({flapFrac:S.flapFrac*0.85})) : 0;
+  const cop = Math.max(perturb({xcCP:0.36}), perturb({xcCP:0.28}));
+  const noise = Math.abs(S.noise/sens);
+  const therm = Math.abs(1.5*S.dT*(THERMAL_REJECT[S.bridge])/sens);
+  const items = [
+    {k:"Gauge noise", v:noise, c:"comp"},
+    {k:"Thermal drift", v:therm, c:"comp"},
+    {k:"Spanwise distribution", v:shape, c:"tens"},
+    {k:"Flap load split", v:split, c:"tens"},
+    {k:"Centre of pressure", v:cop, c:"tens"},
+  ];
+  const total = Math.hypot(...items.map(i=>i.v));
+  return { r, sens, items, total };
+}
+
+/* ---------- span chart ---------- */
+function drawSpan(r, P){
+  const W=880, H=290, L=52, R=14, T=16, B=34;
+  const n=121, span=P.span;
+  const ys=[], top=[], bot=[];
+  for(let i=0;i<n;i++){
+    const y=span*i/(n-1); ys.push(y);
+    top.push(r.read({y, xc:S.gx, surface:"top", angle:0}).ue);
+    bot.push(r.read({y, xc:S.gx, surface:"bottom", angle:0}).ue);
+  }
+  const lim=Math.max(1e-6,...top.map(Math.abs),...bot.map(Math.abs))*1.18;
+  const X=(y)=>L+(W-L-R)*y/span, Y=(v)=>T+(H-T-B)*(1-(v+lim)/(2*lim));
+  const path=(a)=>a.map((v,i)=>(i?"L":"M")+X(ys[i]).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  const my1=P.mountY, my2=span-P.mountY, depth=r.sec.depth*2.5;
+  let g="";
+  // no-go zones around the mounts
+  for(const m of [my1,my2]){
+    const a=Math.max(0,m-depth), b=Math.min(span,m+depth);
+    g+=`<rect x="${X(a)}" y="${T}" width="${X(b)-X(a)}" height="${H-T-B}"
+         fill="var(--tens-2)" opacity=".055"/>`;
+  }
+  // gridlines
+  for(let k=-1;k<=1;k+=0.5){
+    const v=k*lim/1.18, yy=Y(v);
+    g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--line)"
+         stroke-width="1"/><text x="${L-7}" y="${yy+3.5}" text-anchor="end"
+         class="mono" font-size="10" fill="var(--ink-3)">${v.toFixed(0)}</text>`;
+  }
+  g+=`<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--ink-3)" stroke-width="1"/>`;
+  for(const [m,lab] of [[my1,"mount"],[my2,"mount"]]){
+    g+=`<line x1="${X(m)}" x2="${X(m)}" y1="${T}" y2="${H-B}" stroke="var(--ink-3)"
+         stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="${X(m)+4}" y="${T+11}" font-size="10" fill="var(--ink-3)">${lab}</text>`;
+  }
+  g+=`<path d="${path(top)}" fill="none" stroke="var(--tens-2)" stroke-width="2"/>`;
+  g+=`<path d="${path(bot)}" fill="none" stroke="var(--comp-2)" stroke-width="2"/>`;
+  // axis
+  for(let k=0;k<=4;k++){
+    const y=span*k/4;
+    g+=`<text x="${X(y)}" y="${H-B+16}" text-anchor="middle" class="mono"
+         font-size="10" fill="var(--ink-3)">${(y*1e3).toFixed(0)}</text>`;
+  }
+  g+=`<text x="${(L+W-R)/2}" y="${H-4}" text-anchor="middle" font-size="11"
+       fill="var(--ink-3)">spanwise station [mm]</text>`;
+  g+=`<text x="12" y="${T+52}" font-size="11" fill="var(--ink-3)"
+       transform="rotate(-90 12 ${T+52})" text-anchor="middle">strain [µε]</text>`;
+  // direct labels
+  const iL = Math.round(n*0.5);
+  g+=`<text x="${X(ys[iL])}" y="${Y(top[iL])-7}" font-size="11" fill="var(--tens-2)"
+       text-anchor="middle">top skin</text>`;
+  g+=`<text x="${X(ys[iL])}" y="${Y(bot[iL])+15}" font-size="11" fill="var(--comp-2)"
+       text-anchor="middle">bottom skin</text>`;
+  // the gauge
+  const gy=S.gy*span, gv=r.gauge.eSpan*1e6;
+  g+=`<line x1="${X(gy)}" x2="${X(gy)}" y1="${T}" y2="${H-B}" stroke="var(--gauge)"
+       stroke-width="1.5"/>
+      <circle cx="${X(gy)}" cy="${Y(gv)}" r="6.5" fill="var(--gauge)"
+       stroke="var(--surface)" stroke-width="2"/>
+      <text x="${X(gy)+(gy>span*0.75?-10:10)}" y="${Y(gv)-10}" font-size="11.5"
+       fill="var(--gauge)" font-weight="600"
+       text-anchor="${gy>span*0.75?"end":"start"}">gauge ${fmt(gv,1)} µε</text>`;
+  $("svg-span").innerHTML=g;
+  $("svg-span").dataset.l=L; $("svg-span").dataset.r=R; $("svg-span").dataset.w=W;
+}
+
+/* ---------- section chart ---------- */
+function drawSection(r, P){
+  const W=440, H=300, pad=26;
+  const xs=r.sec.segs.flatMap(s=>[s.p0[0],s.p1[0]]);
+  const zs=r.sec.segs.flatMap(s=>[s.p0[1],s.p1[1]]);
+  const x0=Math.min(...xs), x1=Math.max(...xs), z0=Math.min(...zs), z1=Math.max(...zs);
+  const k=Math.min((W-2*pad)/(x1-x0), (H-2*pad-16)/(z1-z0));
+  const cx=(W-(x1-x0)*k)/2, cz=(H-16-(z1-z0)*k)/2;
+  const X=(x)=>cx+(x-x0)*k, Y=(z)=>cz+(z1-z)*k;
+  const Mx=r.gauge.Mx, Mz=r.gauge.Mz;
+  const vals=r.sec.segs.map(s=>1e6*epsAt(r,s,Mx,Mz)/r.Dtot);
+  const lim=Math.max(...vals.map(Math.abs),1e-9);
+  let g="";
+  r.sec.segs.forEach((s,i)=>{
+    g+=`<line x1="${X(s.p0[0]).toFixed(1)}" y1="${Y(s.p0[1]).toFixed(1)}"
+         x2="${X(s.p1[0]).toFixed(1)}" y2="${Y(s.p1[1]).toFixed(1)}"
+         stroke="${ramp(vals[i]/lim)}" stroke-width="5" stroke-linecap="round"/>`;
+  });
+  const e=r.sec, ea=[X(e.xEA),Y(e.zEA)], sc=[X(e.xSC),Y(e.zEA)];
+  g+=`<path d="M${ea[0]-5} ${ea[1]}h10M${ea[0]} ${ea[1]-5}v10" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="${ea[0]+7}" y="${ea[1]+13}" font-size="10" fill="var(--ink-2)">centroid</text>
+      <path d="M${sc[0]-4} ${sc[1]-4}l8 8M${sc[0]+4} ${sc[1]-4}l-8 8" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <text x="${sc[0]-7}" y="${sc[1]-8}" font-size="10" fill="var(--ink-2)" text-anchor="end">shear centre</text>`;
+  const gs=r.sec.segs[r.gauge.i];
+  g+=`<circle cx="${X(gs.mid[0])}" cy="${Y(gs.mid[1])}" r="7" fill="none"
+       stroke="var(--gauge)" stroke-width="2.5"/>
+      <circle cx="${X(gs.mid[0])}" cy="${Y(gs.mid[1])}" r="2" fill="var(--gauge)"/>`;
+  g+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" font-size="11" fill="var(--ink-3)">
+       flow →   strain per newton, ${fmt(-lim,3)} to ${fmt(lim,3)} µε/N</text>`;
+  $("svg-sec").innerHTML=g;
+  $("svg-sec")._hit={X,Y,segs:r.sec.segs};
+}
+function epsAt(r,s,Mx,Mz){
+  const sec=r.sec, det=sec.EIzz*sec.EIxx-sec.EIxz*sec.EIxz;
+  const b=(Mz*sec.EIxx-Mx*sec.EIxz)/det, c=(Mx*sec.EIzz-Mz*sec.EIxz)/det;
+  return b*(s.mid[0]-sec.xEA)+c*(s.mid[1]-sec.zEA);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const P=params(), B=budget(), r=B.r;
+  // tiles
+  $("t-down").textContent=r.Dtot.toFixed(0);
+  $("t-down-sub").textContent=`${(S.V*3.6).toFixed(0)} km/h · q ${r.q.toFixed(0)} Pa · `
+    + `${(r.Del).toFixed(0)} N on this element + ${(r.Dcar).toFixed(0)} N through the brackets`;
+  $("t-ue").textContent=fmt(r.gauge.ue,1);
+  $("t-ue-sub").textContent=`${S.surface} skin, x/c ${S.gx.toFixed(2)}, `
+    + `${S.gang>0?"+":""}${S.gang}° grid`;
+  $("t-sens").textContent=fmt(B.sens,4);
+  $("t-sens-sub").textContent=`${Math.abs(1/B.sens).toFixed(1)} N per µε of reading`;
+  $("t-mv").textContent=fmt(r.gauge.mVperV,4);
+  $("t-mv-sub").textContent=`${fmt(r.gauge.mV,3)} mV at 5 V excitation`;
+  $("t-err").textContent=B.total.toFixed(1);
+  const rel=100*B.total/r.Dtot;
+  $("t-err-sub").textContent=`${rel.toFixed(1)}% of the downforce · 1σ`;
+  $("tile-err").dataset.flag = rel<5?"good":rel<15?"":"warn";
+
+  let peak=0, peakY=0;
+  for(let i=0;i<r.beam.y.length;i++){
+    for(const s of ["top","bottom"]){
+      const v=r.read({y:r.beam.y[i], xc:S.gx, surface:s, angle:0}).ue;
+      if(Math.abs(v)>Math.abs(peak)){ peak=v; peakY=r.beam.y[i]; }
+    }
+  }
+  $("t-peak").textContent=fmt(peak,0);
+  $("t-peak-sub").textContent=`at y ${(peakY*1e3).toFixed(0)} mm · skin `
+    + `${(r.skin.thickness*1e3).toFixed(2)} mm, E ${(r.skin.Ex/1e9).toFixed(0)} GPa`;
+
+  drawSpan(r,P); drawSection(r,P);
+
+  // budget bars
+  const max=Math.max(...B.items.map(i=>i.v),1e-9);
+  $("budget").innerHTML=B.items.map(i=>`
+    <div class="bar-row">
+      <span style="color:var(--ink-2)">${i.k}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${100*i.v/max}%;
+        background:var(--${i.c==="comp"?"comp-2":"tens-2"})"></span></span>
+      <span class="amt mono">${i.v.toFixed(1)} N</span>
+    </div>`).join("")
+    + `<div class="bar-row" style="margin-top:8px;border-top:1px solid var(--line);
+         padding-top:8px"><b style="color:var(--ink)">Combined</b>
+       <span></span><span class="amt mono" style="color:var(--ink)">
+       ${B.total.toFixed(1)} N</span></div>`;
+
+  // channel table
+  const rows=[
+    ["Gauge as placed", r.gauge.ue, B.sens],
+    ["Same station, other skin",
+      r.read({y:S.gy*P.span,xc:S.gx,surface:S.surface==="top"?"bottom":"top",angle:0}).ue, null],
+    ["Strut gauge (each mount)", r.strut.ue, null],
+  ];
+  $("reads").innerHTML=rows.map(([k,ue])=>{
+    const s=ue/r.Dtot;
+    return `<tr><td>${k}</td><td class="mono">${fmt(ue,1)} µε</td>
+      <td class="mono">${fmt(s,4)}</td>
+      <td class="mono">${Math.abs(1/s).toFixed(1)}</td></tr>`;
+  }).join("");
+
+  // findings
+  const f=[];
+  const dist=Math.min(Math.abs(S.gy*P.span-P.mountY), Math.abs(S.gy*P.span-(P.span-P.mountY)));
+  const clear=2.5*r.sec.depth;
+  if(dist<clear) f.push(["warn",`The gauge is ${(dist*1e3).toFixed(0)} mm from a mount,
+    inside the ${(clear*1e3).toFixed(0)} mm where load introduction still dominates.
+    Beam theory — and this model — do not describe the strain there. Move it outboard
+    or inboard.`]);
+  if(Math.abs(r.gauge.ue)<6) f.push(["warn",`Only ${fmt(r.gauge.ue,1)} µε of signal.
+    At a ${S.noise.toFixed(1)} µε noise floor that is a
+    ${(100*S.noise/Math.abs(r.gauge.ue)).toFixed(0)}% reading error before anything
+    else goes wrong. Thin the skin, move to a higher-moment station, or accept averaging.`]);
+  const mf=P.mountY/P.span;
+  if(Math.abs(mf-0.207)<0.035) f.push(["warn",`Mounts at ${(100*mf).toFixed(1)}% of span
+    sit on the moment-cancelling spacing (0.207): hogging over the mounts and sagging
+    between them almost cancel. Structurally neat, and close to the worst case for a
+    strain measurement.`]);
+  if(S.flapFrac>0.15) f.push(["gauge",`${(100*S.flapFrac).toFixed(0)}% of the wing's
+    downforce arrives through brackets at ${(100*S.bracket).toFixed(0)}% span — 
+    ${Math.abs(S.bracket-mf)<0.06?"right beside the mounts, so it generates almost no\n    bending moment and this gauge is nearly blind to it":"far enough from the mounts to show up in the bending strain"}.
+    Converting a skin reading into TOTAL downforce leans on that split being what you think.`]);
+  const strutErr=Math.hypot(S.noise*Math.abs(1/(r.strut.ue/r.Dtot)), 0.2*S.dT*Math.abs(1/(r.strut.ue/r.Dtot)));
+  f.push([strutErr<B.total?"good":"", `A gauge on each mount strut would read
+    ${fmt(r.strut.ue,1)} µε and see the whole load — distribution, split and centre of
+    pressure drop out exactly. ${strutErr<B.total
+      ? `On this configuration that is the better total-downforce channel (≈±${strutErr.toFixed(0)} N).`
+      : `Here the skin gauge is still the stronger channel.`}
+    The skin gauge is what tells you <em>where</em> the load acts.`]);
+  const bestXc=bestChord(r,P);
+  f.push(["",`At this station the strongest chord position on the ${S.surface} skin is
+    x/c ${bestXc.xc.toFixed(2)} (${fmt(bestXc.ue,1)} µε), against
+    ${fmt(r.gauge.eSpan*1e6,1)} µε where the gauge is now. Maximum thickness is at
+    x/c ${r.af.xtmax.toFixed(2)} — at ${S.angle.toFixed(0)}° of incidence the deepest
+    material relative to the neutral axis is not the thickest point.`]);
+  $("findings").innerHTML=f.map(([k,t])=>
+    `<div class="finding"><span class="dot" data-k="${k}"></span><span>${t}</span></div>`).join("");
+
+  $("hint-span").textContent=`Shaded bands: within 2.5 section depths `
+    + `(${(clear*1e3).toFixed(0)} mm) of a mount. Peak bending moment `
+    + `${fmt(Math.max(...r.beam.Mx.map(Math.abs)),2)} N·m.`;
+  $("sec-note").textContent=`${r.af.name} · ${(100*r.af.tmax).toFixed(1)}% thick`
+    + ` · click the outline to move the gauge`;
+  $("hint-sec").textContent=`EI ${r.sec.EIxx.toFixed(0)} N·m² about the chordwise axis, `
+    + `GJ ${r.sec.GJ.toFixed(0)} N·m², section depth ${(r.sec.depth*1e3).toFixed(0)} mm `
+    + `in car axes.`;
+}
+function bestChord(r,P){
+  let best={xc:S.gx,ue:0};
+  for(let i=0;i<=40;i++){
+    const xc=0.03+(P.xRear-0.05)*i/40;
+    const v=r.read({y:S.gy*P.span,xc,surface:S.surface,angle:0});
+    if(Math.abs(v.ue)>Math.abs(best.ue)) best={xc,ue:v.ue};
+  }
+  return best;
+}
+
+/* ---------- your own section ---------- */
+const STORE_KEY = "wing-strain-bench/profile";
+function setStatus(kind, html){
+  const el=$("c-status"); el.dataset.k=kind; el.innerHTML=html;
+}
+function describeProfile(pf){
+  return `<b>${escapeHtml(pf.name)}</b> — ${(100*pf.tmax).toFixed(1)}% thick at
+    x/c ${pf.xtmax.toFixed(2)}, ${(100*pf.camber).toFixed(1)}% camber,
+    ${pf.nPts} points. ${pf.camber>0.005
+      ? "Camber is positive, so the file is drawn the usual way up; mounted inverted it makes downforce."
+      : pf.camber<-0.005
+      ? "Camber is negative, so this file is already drawn inverted — switch “Mount as” to <em>As drawn</em>."
+      : "Symmetric section."}`;
+}
+const escapeHtml=(t)=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function loadProfile(text, fallbackName, remember=true){
+  let pf;
+  try { pf = parseProfile(text, fallbackName); }
+  catch(err){
+    setStatus("bad", `<b>Could not read that file.</b> ${escapeHtml(err.message)}`);
+    return false;
+  }
+  customProfile = pf; customText = text;
+  $("opt-custom").hidden = false;
+  $("opt-custom").textContent = pf.name.length>28 ? pf.name.slice(0,27)+"…" : pf.name;
+  S.useCustom = true; S.naca = "custom";
+  if (pf.camber < -0.005) S.inverted = false;
+  setStatus("ok", describeProfile(pf));
+  if (remember) { try { localStorage.setItem(STORE_KEY,
+    JSON.stringify({text, name:fallbackName})); } catch(e){} }
+  update();
+  return true;
+}
+function readFile(file){
+  if(!file) return;
+  if(file.size > 2e6){ setStatus("bad","<b>That file is over 2 MB</b> — coordinate files are a few kB. Is it the right one?"); return; }
+  const fr=new FileReader();
+  fr.onload=()=>loadProfile(String(fr.result), file.name.replace(/\.[^.]+$/,""));
+  fr.onerror=()=>setStatus("bad","<b>Could not open that file.</b> Try pasting the coordinates instead.");
+  fr.readAsText(file);
+}
+$("c-file-btn").addEventListener("click",()=>$("c-file").click());
+$("c-file").addEventListener("change",(e)=>{ readFile(e.target.files[0]); e.target.value=""; });
+$("c-paste-btn").addEventListener("click",()=>{
+  const ta=$("c-paste"), row=$("c-paste-row"), open=ta.hidden;
+  ta.hidden=!open; row.hidden=!open;
+  $("c-paste-btn").setAttribute("aria-expanded",String(open));
+  if(open){ ta.value=ta.value||customText; ta.focus(); }
+});
+$("c-paste-use").addEventListener("click",()=>{
+  const t=$("c-paste").value.trim();
+  if(!t){ setStatus("bad","<b>Nothing pasted yet.</b> One <code>x z</code> pair per line."); return; }
+  if(loadProfile(t,"pasted section")){ $("c-paste").hidden=true; $("c-paste-row").hidden=true;
+    $("c-paste-btn").setAttribute("aria-expanded","false"); }
+});
+$("c-paste-clear").addEventListener("click",()=>{ $("c-paste").value=""; $("c-paste").focus(); });
+for(const b of document.querySelectorAll("#c-inv button"))
+  b.addEventListener("click",()=>{ S.inverted=b.dataset.v==="1"; update(); });
+
+// drop a coordinate file anywhere on the page
+let dragDepth=0;
+document.addEventListener("dragover",(e)=>{ e.preventDefault(); });
+document.addEventListener("dragenter",(e)=>{
+  if(!e.dataTransfer?.types?.includes("Files")) return;
+  if(++dragDepth===1) $("profile-group").classList.add("dropping");
+});
+document.addEventListener("dragleave",()=>{ if(--dragDepth<=0){ dragDepth=0;
+  $("profile-group").classList.remove("dropping"); } });
+document.addEventListener("drop",(e)=>{
+  if(!e.dataTransfer?.files?.length) return;
+  e.preventDefault(); dragDepth=0; $("profile-group").classList.remove("dropping");
+  readFile(e.dataTransfer.files[0]);
+  $("profile-group").scrollIntoView({block:"nearest",
+    behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});
+});
+
+/* ---------- wiring ---------- */
+const labels = {
+  span:()=>`${(S.span*1e3).toFixed(0)} mm`,
+  chord:()=>`${(S.chord*1e3).toFixed(0)} mm`,
+  angle:()=>`${S.angle.toFixed(1)}°`,
+  naca:()=>S.useCustom&&customProfile
+    ? `t/c ${(100*customProfile.tmax).toFixed(1)}%`
+    : `t/c ${S.naca.slice(2)}%`,
+  plies:()=>`${S.plies} · ${(S.plies*0.25).toFixed(2)} mm`,
+  layup:()=>layupAngles(S.plies,S.layup).join("/"),
+  web:()=>S.xRear>0.99?"closed at TE":`x/c ${S.xRear.toFixed(2)}`,
+  mount:()=>`${(S.mountFrac*S.span*1e3).toFixed(0)} mm · ${((1-2*S.mountFrac)*S.span*1e3).toFixed(0)} apart`,
+  gy:()=>`${(S.gy*S.span*1e3).toFixed(0)} mm`,
+  gx:()=>`x/c ${S.gx.toFixed(2)}`,
+  surf:()=>S.surface,
+  ang:()=>`${S.gang>0?"+":""}${S.gang}°`,
+  noise:()=>`${S.noise.toFixed(1)} µε`,
+  v:()=>`${S.V.toFixed(1)} m/s`,
+  cl:()=>S.CL.toFixed(2),
+  flap:()=>`${(100*S.flapFrac).toFixed(0)}%`,
+  brk:()=>`${(100*S.bracket).toFixed(0)}% span`,
+  tip:()=>`${(100*S.tip).toFixed(0)}% at tip`,
+  dt:()=>`±${S.dT.toFixed(0)} K`,
+  inv:()=>S.inverted?"suction side down":"as drawn",
+};
+const MAP = { "c-span":"span", "c-chord":"chord", "c-angle":"angle", "c-naca":"naca",
+  "c-plies":"plies", "c-layup":"layup", "c-web":"xRear", "c-mount":"mountFrac",
+  "c-gy":"gy", "c-gx":"gx", "c-noise":"noise", "c-v":"V", "c-cl":"CL",
+  "c-flap":"flapFrac", "c-brk":"bracket", "c-tip":"tip", "c-dt":"dT",
+  "c-bridge":"bridge" };
+const LBL = { "c-span":"span","c-chord":"chord","c-angle":"angle","c-naca":"naca",
+  "c-plies":"plies","c-layup":"layup","c-web":"web","c-mount":"mount","c-gy":"gy",
+  "c-gx":"gx","c-noise":"noise","c-v":"v","c-cl":"cl","c-flap":"flap",
+  "c-brk":"brk","c-tip":"tip","c-dt":"dt" };
+
+function syncControls(){
+  for(const [id,key] of Object.entries(MAP)){
+    const el=$(id); if(!el) continue;
+    el.value = S[key];
+  }
+  for(const [id,lk] of Object.entries(LBL)){
+    const el=$("v-"+lk); if(el) el.textContent=labels[lk]();
+  }
+  $("c-naca").value = S.useCustom ? "custom" : S.naca;
+  $("v-surf").textContent=labels.surf();
+  $("v-inv").textContent=labels.inv();
+  for(const b of document.querySelectorAll("#c-inv button"))
+    b.setAttribute("aria-pressed", String((b.dataset.v==="1")===S.inverted));
+  $("v-ang").textContent=labels.ang();
+  $("v-layup").textContent=labels.layup();
+  for(const b of document.querySelectorAll("#c-surf button"))
+    b.setAttribute("aria-pressed", String(b.dataset.v===S.surface));
+  for(const b of document.querySelectorAll("#c-gang button"))
+    b.setAttribute("aria-pressed", String(+b.dataset.v===S.gang));
+}
+function update(){ syncControls(); render(); }
+
+for(const [id,key] of Object.entries(MAP)){
+  const el=$(id); if(!el) continue;
+  el.addEventListener("input", ()=>{
+    const v = el.type==="range" ? +el.value : el.value;
+    if(key==="naca"){
+      if(v==="custom" && !customProfile){
+        setStatus("bad","<b>No profile loaded yet.</b> Open or paste a coordinate file first.");
+        $("c-naca").value=S.naca; return;
+      }
+      S.useCustom = (v==="custom");
+      if(!S.useCustom) S.naca=v;
+    } else {
+      S[key]=v;
+    }
+    if(key==="span") S.gy=Math.min(0.99,Math.max(0.01,S.gy));
+    update();
+  });
+}
+for(const b of document.querySelectorAll("#c-surf button"))
+  b.addEventListener("click", ()=>{ S.surface=b.dataset.v; update(); });
+for(const b of document.querySelectorAll("#c-gang button"))
+  b.addEventListener("click", ()=>{ S.gang=+b.dataset.v; update(); });
+$("c-reset").addEventListener("click", ()=>{ Object.assign(S,BASE); update(); });
+
+// drag the gauge along the span chart
+const sv=$("svg-span");
+let dragging=false;
+const setFromEvent=(ev)=>{
+  const box=sv.getBoundingClientRect();
+  const L=+sv.dataset.l, R=+sv.dataset.r, W=+sv.dataset.w;
+  const px=(ev.clientX-box.left)/box.width*W;
+  S.gy=Math.max(0.01,Math.min(0.99,(px-L)/(W-L-R)));
+  update();
+};
+sv.addEventListener("pointerdown",(e)=>{dragging=true; sv.setPointerCapture(e.pointerId); setFromEvent(e);});
+sv.addEventListener("pointermove",(e)=>{ if(dragging) setFromEvent(e); });
+sv.addEventListener("pointerup",()=>{dragging=false});
+sv.addEventListener("pointercancel",()=>{dragging=false});
+
+// click the section outline to move the gauge chordwise
+$("svg-sec").addEventListener("pointerdown",(e)=>{
+  const hit=$("svg-sec")._hit; if(!hit) return;
+  const box=e.currentTarget.getBoundingClientRect();
+  const px=(e.clientX-box.left)/box.width*440, py=(e.clientY-box.top)/box.height*300;
+  let best=null, bd=Infinity;
+  for(const s of hit.segs){
+    if(s.surf!=="top"&&s.surf!=="bottom") continue;
+    const d=Math.hypot(hit.X(s.mid[0])-px, hit.Y(s.mid[1])-py);
+    if(d<bd){ bd=d; best=s; }
+  }
+  if(best&&bd<40){ S.gx=Math.max(0.03,Math.min(0.95,best.xc)); S.surface=best.surf; update(); }
+});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+new MutationObserver(render).observe(document.documentElement,
+  {attributes:true, attributeFilter:["data-theme"]});
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+  if (saved && saved.text) loadProfile(saved.text, saved.name, false);
+} catch (e) { /* no stored profile, or storage unavailable */ }
+
+update();
+</script>
